@@ -16,7 +16,6 @@ module mst_fifo_top (
   input wire ERDIS, // 1: Disable received data sequence check  
   input wire R_OOB,
   input wire W_OOB,  
-  input wire WAKEUP_N, 
   // FIFO Slave interface 
   input wire CLK,
   inout wire [31:0] DATA,
@@ -24,102 +23,21 @@ module mst_fifo_top (
   input wire RXF_N,    // ACK_N
   input wire TXE_N,
   output wire WR_N,    // REQ_N
-  output wire SIWU_N,
   output wire RD_N,
   output wire OE_N,
   // Miscellaneous Interface 
-  output wire [3:0] debug_sig,
   output wire [3:0] STRER
 );
-
-  assign debug_sig[0]   = WAKEUP_N; 
-  assign debug_sig[3:1] = 3'b101;
   
-  wire [31:0] tp_data;
-  wire [3:0]  tp_be;
   wire tp_dt_oe_n;
   wire tp_be_oe_n;
-  wire tp_siwu_n;
-  wire tp_wr_n;     // tp_req_n
-  wire tp_rd_n;
-  wire tp_oe_n;
-  // 
-  wire [3:0] tp_debug_sig;
-  wire [3:0] tp_seq_err;
-  // To chip internal 
-  wire [31:0] tc_data;
-  wire [3:0]  tc_be;
-  wire tc_rst_n;
-  wire tc_clk;
-  wire tc_txe_n;
-  wire tc_rxf_n;
-  //
-  wire tc_mltcn;
-  wire tc_stren;
-  wire tc_bus16;
-  wire tc_erdis;
-  wire tc_r_oob;
-  wire tc_w_oob;
-  wire [3:0] tc_mst_rd_n;
-  wire [3:0] tc_mst_wr_n; 
-  // 
-  mst_fifo_io i0_io (
-    //GPIO Control Signals
-  `ifdef ALTERA_FPGA 	 	 
-    .HRST_N	(HRST_N),
-    .SRST_N	(SRST_N),
-  `else 
-    .HRST_N	(!HRST_N),
-    .SRST_N	(SRST_N),
-  `endif 
-    .MLTCN	(MLTCN), 
-    .STREN	(STREN), 
-    .ERDIS	(ERDIS), 
-    .MST_RD_N	(4'h0),   
-    .MST_WR_N	(4'h0), 
-    .R_OOB	(R_OOB), 
-    .W_OOB	(W_OOB), 
-    // FIFO Slave interface 
-    .CLK		(CLK),
-    .DATA	(DATA),
-    .BE		(BE),
-    .RXF_N	(RXF_N),   
-    .TXE_N	(TXE_N),
-    .WR_N	(WR_N),
-    .SIWU_N	(SIWU_N),
-    .RD_N	(RD_N),
-    .OE_N	(OE_N),
-    // Miscellaneous Interface 
-    .debug_sig	(), //(debug_sig),
-    .seq_err	(STRER),
-    // From chip internal 
-    .tp_data	(tp_data),
-    .tp_be	(tp_be),
-    .tp_dt_oe_n	(tp_dt_oe_n),
-    .tp_be_oe_n	(tp_be_oe_n),
-    .tp_siwu_n	(tp_siwu_n),
-    .tp_wr_n	(tp_wr_n),   
-    .tp_rd_n	(tp_rd_n),
-    .tp_oe_n	(tp_oe_n),
-    // 
-    .tp_debug_sig(tp_debug_sig),
-    .tp_seq_err	(tp_seq_err),
-    // To chip internal 
-    .tc_data	(tc_data),
-    .tc_be	(tc_be),
-    .tc_rst_n	(tc_rst_n),
-    .tc_clk	(tc_clk),
-    .tc_txe_n	(tc_txe_n),
-    .tc_rxf_n	(tc_rxf_n),
-    //
-    .tc_mltcn	(tc_mltcn),
-    .tc_stren	(tc_stren),
-    .tc_erdis	(tc_erdis),
-    .tc_r_oob	(tc_r_oob),
-    .tc_w_oob	(tc_w_oob),
-    .tc_mst_rd_n(tc_mst_rd_n),
-    .tc_mst_wr_n(tc_mst_wr_n) 
-  );
+  wire [31:0] tp_data;
+  wire [3:0]  tp_be;
+
+  assign DATA 	= ~tp_be_oe_n ? tp_data 	: 32'hzzzz;
+  assign BE 	= ~tp_be_oe_n ? tp_be 		: 4'bzzzz;
+
+  wire RST_N = SRST_N & HRST_N;
 
   wire ch0_vld;
   wire ch1_vld;
@@ -153,37 +71,33 @@ module mst_fifo_top (
  //
   mst_fifo_fsm i1_fsm (
     // IO interface 
-    .rst_n	(tc_rst_n),
-    .clk		(tc_clk),
-    .txe_n	(tc_txe_n),
-    .rxf_n	(tc_rxf_n),
-    .idata	(tc_data),
-    .ibe		(tc_be),
+    .rst_n	(RST_N),
+    .clk		(CLK),
+    .txe_n	(TXE_N),
+    .rxf_n	(RXF_N),
+    .idata	(DATA),
+    .ibe		(BE),
     //
-    .mltcn	(tc_mltcn),
-    .stren	(tc_stren),
-    .r_oob	(tc_r_oob),
-    .w_oob	(tc_w_oob),
-    .mst_rd_n	(tc_mst_rd_n),
-    .mst_wr_n	(tc_mst_wr_n), 
+    .mltcn	(MLTCN),
+    .stren	(STREN),
+    .r_oob	(R_OOB),
+    .w_oob	(W_OOB),
     // 
     .odata	(tp_data),
     .obe		(tp_be),
     .dt_oe_n(tp_dt_oe_n),
     .be_oe_n(tp_be_oe_n),
-    .siwu_n	(tp_siwu_n),
-    .wr_n	(tp_wr_n),
-    .rd_n	(tp_rd_n),
-    .oe_n	(tp_oe_n),
+    .wr_n	(WR_N),
+    .rd_n	(RD_N),
+    .oe_n	(OE_N),
     // 
-    .tp_debug_sig(tp_debug_sig),
     // Check Data interface 
     .ch0_vld	(ch0_vld),
     .ch1_vld	(ch1_vld),
     .ch2_vld	(ch2_vld),
     .ch3_vld	(ch3_vld),
     .chk_data	(chk_data),
-    .chk_err	(tp_seq_err),
+    .chk_err	(STRER),
     // internal FIFO control interface 
     .ififoafull	(ififoafull),
     .ififonempt	(ififonempt),
@@ -200,8 +114,8 @@ module mst_fifo_top (
   );
   //
    mst_pre_fet i2_pref (
-    .clk      (tc_clk),
-    .rst_n    (tc_rst_n),
+    .clk      (CLK),
+    .rst_n    (RST_N),
      //Flow control interface
     .prefena  (prefena),    
     .prefreq  (prefreq),    
@@ -224,15 +138,13 @@ module mst_fifo_top (
     .gen3dat  (ch3_dat) 
      );
   // 
-  wire chk_rst_n;
-  assign chk_rst_n = (!tc_w_oob) & tc_rst_n;
-  assign tc_bus16  = 1'b1;
+  wire tc_bus16  = 1'b1;
   // 
   mst_data_chk i3_chk(
-    .rst_n	(chk_rst_n),
-    .clk	(tc_clk),
+    .rst_n	((!W_OOB) & RST_N),
+    .clk	(CLK),
     .bus16	(tc_bus16),
-    .erdis 	(tc_erdis), 
+    .erdis 	(ERDIS), 
     .ch0_vld	(ch0_vld),
     .ch1_vld	(ch1_vld),
     .ch2_vld	(ch2_vld),
@@ -241,12 +153,9 @@ module mst_fifo_top (
     .seq_err	(tp_seq_err) 
   );
   //
-  wire gen_rst_n;
-  assign gen_rst_n = (!tc_r_oob) & tc_rst_n;
-  // 
   mst_data_gen i4_gen(
-    .rst_n	(gen_rst_n),
-    .clk	(tc_clk),
+    .rst_n	((!R_OOB) & RST_N),
+    .clk	(CLK),
     .bus16	(tc_bus16),
     .ch0_req	(ch0_req),
     .ch1_req	(ch1_req),
@@ -264,9 +173,9 @@ module mst_fifo_top (
   wire [35:0] mem_q; 
   //  
   mst_fifo_ctl i5_ctl(
-    .clk	(tc_clk),
-    .rst_n	(tc_rst_n),
-    .mltcn	(tc_mltcn),
+    .clk	(CLK),
+    .rst_n	(RST_N),
+    .mltcn	(MLTCN),
     //FIFO control 
     .fiford	(ififord),
     .fifordid	(prefchn),

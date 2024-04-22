@@ -19,19 +19,14 @@ module mst_fifo_fsm (
   input  stren,
   input  r_oob,
   input  w_oob,  
-  input  [3:0] mst_rd_n,
-  input  [3:0] mst_wr_n,
   // 
   output  reg [31:0] odata,
   output  reg [3:0]  obe,
   output  reg dt_oe_n,
   output  reg be_oe_n,
-  output  wire siwu_n,
   output  reg wr_n,    
   output  reg rd_n,
   output  reg oe_n,
-  // 
-  output  [3:0] tp_debug_sig,  
   // Check Data interface 
   output  ch0_vld,
   output  ch1_vld,
@@ -61,9 +56,6 @@ module mst_fifo_fsm (
   //  
   reg [3:0] nxt_state, cur_stap1, cur_stap2, cur_stap3, cur_stap4;
   wire [3:0] cur_state;  
-  //
-  assign tp_debug_sig[3:0] 	= 4'b1010; 
-  assign siwu_n		= 1'b1;
   //
   wire [3:0] imst_rd_n;
   wire [3:0] imst_wr_n;
@@ -402,8 +394,8 @@ wire [3:0] wbe;
       r_oob_p1    <= r_oob;		
       r_oob_p2    <= r_oob_p1;
       r_oob_p3    <= r_oob_p2;
-      mst_rd_n_p1 <= mst_rd_n;
-      mst_wr_n_p1 <= mst_wr_n;
+      mst_rd_n_p1 <= 4'h0;  // Hardcoded at top-level
+      mst_wr_n_p1 <= 4'h0;  // Hardcoded at top-level
       mst_rd_n_p2 <= mst_rd_n_p1;
       mst_wr_n_p2 <= mst_wr_n_p1;
       mst_wr_n_p3 <= mst_wr_n_p2[0];
