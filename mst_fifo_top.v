@@ -282,23 +282,7 @@ module mst_fifo_top (
     .mem_d	(mem_d),
     .mem_q	(mem_q) 
     );
-    //
-  `ifdef ALTERA_FPGA 	
-  sp_sram_16k36 i6_ram (
-    .address	(mem_a),
-    .clock	(tc_clk),
-    .data	(mem_d),
-    .wren	(mem_w),
-    .q		(mem_q) 
-  );
- `else 
-  sp_sram_16k36 i6_ram (
-    .clka	(tc_clk),
-    .wea	(mem_w),
-    .addra	(mem_a),
-    .dina	(mem_d),
-    .douta	(mem_q) 
-  );
- `endif
+
+
 //
 endmodule 
