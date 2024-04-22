@@ -16,8 +16,8 @@ module mst_fifo_top (
   input wire W_OOB,  
   // FIFO Slave interface 
   input wire CLK,
-  inout wire [31:0] DATA,
-  inout wire [3:0] BE,
+  inout wire [15:0] DATA,
+  inout wire [1:0] BE,
   input wire RXF_N,    // ACK_N
   input wire TXE_N,
   output wire WR_N,    // REQ_N
@@ -29,25 +29,24 @@ module mst_fifo_top (
   
   wire tp_dt_oe_n;
   wire tp_be_oe_n;
-  wire [31:0] tp_data;
-  wire [3:0]  tp_be;
+  wire [15:0] tp_data;
+  wire   tp_be;
 
   assign DATA[7:0] 	 = ~tp_be_oe_n ? tp_data[7:0] 	: 8'bzzzzzzzz;
   assign DATA[15:8]  = ~tp_dt_oe_n ? tp_data[15:8] 	: 8'bzzzzzzzz;
-  assign DATA[31:16] = ~tp_be_oe_n ? tp_data[31:16] 	: 16'hzzzz;
-  assign BE 	= ~tp_be_oe_n ? tp_be 		: 4'bzzzz;
+  assign BE 	= ~tp_be_oe_n ? {2{tp_be}} 		: 2'bzz;
 
   wire RST_N = SRST_N & HRST_N;
 
   wire ch0_vld;
-  wire [31:0] chk_data;
+  wire [15:0] chk_data;
   // 
   wire ch0_req;
-  wire [31:0] ch0_dat;
+  wire [15:0] ch0_dat;
   //
   wire prefena;
   wire prefreq;
-  wire[35:0]  prefdout; 
+  wire[16:0]  prefdout; 
  //
   mst_fifo_fsm i1_fsm (
     // IO interface 
@@ -91,12 +90,9 @@ module mst_fifo_top (
     .gen0dat  (ch0_dat)
      );
   // 
-  wire tc_bus16  = 1'b1;
-  // 
   mst_data_chk i3_chk(
     .rst_n	((!W_OOB) & RST_N),
     .clk	(CLK),
-    .bus16	(tc_bus16),
     .erdis 	(ERDIS), 
     .ch0_vld	(ch0_vld),
     .rdata	(chk_data),
@@ -106,7 +102,6 @@ module mst_fifo_top (
   mst_data_gen i4_gen(
     .rst_n	((!R_OOB) & RST_N),
     .clk	(CLK),
-    .bus16	(tc_bus16),
     .ch0_req	(ch0_req),
     .ch0_dat	(ch0_dat)
   );

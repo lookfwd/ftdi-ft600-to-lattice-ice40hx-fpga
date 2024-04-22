@@ -22,7 +22,7 @@ module mst_pre_fet
 //**********************************************
 parameter ADDRBIT = 2;
 parameter LENGTH  = 4;
-parameter WIDTH   = 36;
+parameter WIDTH   = 17;
 //**********************************************
 input clk;
 input rst_n;
@@ -112,7 +112,7 @@ assign prefwr = datareq_p1;
 // 
 always @(*)  
 begin 
-    prefdin = {4'hf,gen0dat};
+    prefdin = {1'b1,gen0dat};
 end 
 //Generate Data Request 
 wire gen0req;

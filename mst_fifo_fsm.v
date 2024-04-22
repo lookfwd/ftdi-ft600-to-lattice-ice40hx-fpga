@@ -12,14 +12,14 @@ module mst_fifo_fsm (
   input  clk,
   input  txe_n,
   input  rxf_n,
-  input  [31:0] idata,
+  input  [15:0] idata,
   input  [3:0]  ibe,
   //
   input  r_oob,
   input  w_oob,  
   // 
-  output  reg [31:0] odata,
-  output  reg [3:0]  obe,
+  output  reg [15:0] odata,
+  output  reg obe,
   output  reg dt_oe_n,
   output  reg be_oe_n,
   output  reg wr_n,    
@@ -28,12 +28,12 @@ module mst_fifo_fsm (
 
   // Check Data interface 
   output  ch0_vld,
-  output  [31:0] chk_data,
+  output  [15:0] chk_data,
   input	  chk_err,  
   // Pre-fetch interface 
   output wire prefena,
   output wire prefreq,
-  input [35:0]  prefdout
+  input [16:0]  prefdout
 );
   //
   localparam IDLE	= 4'b0001;
@@ -43,10 +43,6 @@ module mst_fifo_fsm (
   //  
   reg [3:0] nxt_state, cur_stap1, cur_stap2, cur_stap3, cur_stap4;
   wire [3:0] cur_state;  
-  
-  // Hardcoded on top-level
-  wire [3:0] mst_rd_n = 4'h0;
-  wire [3:0] mst_wr_n = 4'h0;
 
   //
   wire [3:0] imst_rd_n;
@@ -58,7 +54,7 @@ module mst_fifo_fsm (
   reg        mst_wr_n_p3;
   reg        mst_wr_n_p4;
 
-  reg  [36:0] remain; 
+  reg  [17:0] remain; 
   reg  rxf_n_p1;
   reg  txe_n_p1; 
   reg  w_oob_p1;
@@ -96,7 +92,7 @@ module mst_fifo_fsm (
   //Condition for state change  
   reg [3:0] ifsm_cond;
   wire r_oobe;
-  assign r_oobe = r_oob_p2 | ((!wr_n) & (obe != 4'hF)); 
+  assign r_oobe = r_oob_p2 | ((!wr_n) & (obe != 1'b1)); 
   // 
   always @ (posedge clk or negedge rst_n)
   begin
@@ -146,29 +142,29 @@ module mst_fifo_fsm (
       endcase
   end
 //
-reg  [31:0] rdata;
+reg  [15:0] rdata;
 reg  [3:0] rbe; 
 reg  rvalid;
-wire [31:0] wdata;
-wire [3:0] wbe; 
+wire [15:0] wdata;
+wire wbe; 
 //
 //Slave FIFO data bus control 
   always @ (posedge clk or negedge rst_n)
   begin
     if (~rst_n)
     begin 
-      odata	<= 32'hFFFF_FFFF;
-      obe	<=  4'hF;
+      odata	<= 16'hFFFF;
+      obe	<=  1'b1;
     end
     else if ((cur_state == MTWR) || (cur_stap1 == MTWR)) 
       begin
-        odata <= r_oobe ? 32'h0000_0036 : (remain[36] ? remain[31:0]  : wdata[31:0]);
-        obe   <= r_oobe ? 4'h1          : (remain[36] ? remain[35:32] : wbe);
+        odata <= r_oobe ? 16'h0036 : (remain[17] ? remain[15:0]  : wdata[15:0]);
+        obe   <= r_oobe ? 1'b1          : (remain[17] ? remain[16] : wbe);
       end 
     else if ((cur_stap2 == IDLE) | (cur_stap2 == MDLE)) 
     begin 
-      odata	<= 32'hFFFF_FFFF;
-      obe	<=  4'hF;
+      odata	<= 16'hFFFF;
+      obe	<=  1'b1;
     end
   end
   //Read data valid 
@@ -240,15 +236,15 @@ wire [3:0] wbe;
   reg  readburst_p1; 
   // 
   assign readburst = (!txe_n) && (!r_oobe) && (cur_stap3 == MTWR) 
-                          && (!remain[36]) && (!mst_wr_n_p4) && prefena;  
+                          && (!remain[17]) && (!mst_wr_n_p4) && prefena;  
   //  
   //Remain data 
   always @ (posedge clk or negedge rst_n)
   begin
     if (~rst_n)
-      remain <= 37'd0;
+      remain <= 18'd0;
     else if ((cur_stap3 == MTWR) && (cur_stap4 == MDLE))
-      remain <= 37'd0;
+      remain <= 18'd0;
     else if (((!wr_n) & txe_n & readburst_p1))
       remain <= {1'b1,obe,odata};
   end
@@ -282,8 +278,8 @@ wire [3:0] wbe;
       r_oob_p1    <= r_oob;		
       r_oob_p2    <= r_oob_p1;
       r_oob_p3    <= r_oob_p2;
-      mst_rd_n_p1 <= mst_rd_n;
-      mst_wr_n_p1 <= mst_wr_n;
+      mst_rd_n_p1 <= 4'h0;
+      mst_wr_n_p1 <= 4'h0;
       mst_rd_n_p2 <= mst_rd_n_p1;
       mst_wr_n_p2 <= mst_wr_n_p1;
       mst_wr_n_p3 <= mst_wr_n_p2[0];
@@ -296,7 +292,7 @@ assign chk_data= rdata;
 //*****Prefetch control
 assign prefena = (cur_state == MTWR);
 assign prefreq = readburst;
-assign wdata   = prefdout[31:0];
-assign wbe     = prefdout[35:32];
+assign wdata   = prefdout[15:0];
+assign wbe     = prefdout[16];
 //  
 endmodule 
