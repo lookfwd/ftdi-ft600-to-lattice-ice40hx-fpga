@@ -14,14 +14,9 @@ module mst_pre_fet
      //Flow control interface
      prefena,       // pre-fetch enable 
      prefreq,       // pre-fetch data request signal
-     prefmod,	    // pre-fetch mode: 1 streamming 0 loop-back 
      prefchn,	    // pre-fetch channel 
      prefnempt,     // pre-fetch data not empty 
      prefdout,      // pre-fetch data out
-     //Internal FIFO interface  
-     ififord,       // internal FIFO read request 
-     ifnempt,       // internam FIFO not empty 
-     ififodat,      // internal FIFO data 
      //Streaming generate interface 
      gen0req,        // Generate request channel 0
      gen1req,        // Generate request channel 1
@@ -42,14 +37,9 @@ input rst_n;
 //
 input prefena;      
 input prefreq;      
-input prefmod;	    
 input [1:0]  prefchn;
 output[3:0]  prefnempt;      
 output[WIDTH -1:0]  prefdout;      
-//Internal FIFO interface  
-output ififord;
-input [3:0] ifnempt;
-input [WIDTH -1:0] ififodat; 
 //Streaming generate interface 
 output gen0req;
 output gen1req;
@@ -204,9 +194,7 @@ assign prenotful[2] = (pref_len2 < 3);
 assign prenotful[3] = (pref_len3 < 3);
 //read data from FIFO
 wire datareq;
-wire ififord;  
-assign datareq = prefena && prenotful[prefchn] && (ifnempt[prefchn] | prefmod) ;
-assign ififord = datareq && (!prefmod);  
+assign datareq = prefena && prenotful[prefchn] ;
 // 
 reg datareq_p1;
 always @(posedge clk or negedge rst_n)
@@ -221,9 +209,6 @@ assign prefwr = datareq_p1;
 // 
 always @(*)  
 begin 
-  if (!prefmod)
-    prefdin = ififodat; 
-  else 
     case (prefchn)
       2'b00: prefdin = {4'hf,gen0dat};
       2'b01: prefdin = {4'hf,gen1dat}; 
@@ -237,9 +222,9 @@ wire gen1req;
 wire gen2req;
 wire gen3req;
 //
-assign gen0req = datareq & (prefchn == 2'b00) & prefmod; 
-assign gen1req = datareq & (prefchn == 2'b01) & prefmod; 
-assign gen2req = datareq & (prefchn == 2'b10) & prefmod; 
-assign gen3req = datareq & (prefchn == 2'b11) & prefmod;
+assign gen0req = datareq & (prefchn == 2'b00); 
+assign gen1req = datareq & (prefchn == 2'b01); 
+assign gen2req = datareq & (prefchn == 2'b10); 
+assign gen3req = datareq & (prefchn == 2'b11);
 // 
 endmodule 

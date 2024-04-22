@@ -16,7 +16,6 @@ module mst_fifo_fsm (
   input  [3:0]  ibe,
   //
   input  mltcn,
-  input  stren,
   input  r_oob,
   input  w_oob,  
   // 
@@ -37,13 +36,11 @@ module mst_fifo_fsm (
   // internal FIFO control interface  
   input  [3:0] ififoafull,  
   input  [3:0] ififonempt, 
-  output  ififowr,
   output  [ 1:0] ififowrid,
   output  [35:0] ififo_wdat,
   // Pre-fetch interface 
   output wire prefena,
   output wire prefreq,
-  output wire prefmod,
   output wire [1:0] prefchn,
   input [ 3:0]  prefnempt, 
   input [35:0]  prefdout
@@ -56,6 +53,11 @@ module mst_fifo_fsm (
   //  
   reg [3:0] nxt_state, cur_stap1, cur_stap2, cur_stap3, cur_stap4;
   wire [3:0] cur_state;  
+  
+  // Hardcoded on top-level
+  wire [3:0] mst_rd_n = 4'h0;
+  wire [3:0] mst_wr_n = 4'h0;
+
   //
   wire [3:0] imst_rd_n;
   wire [3:0] imst_wr_n;
@@ -135,17 +137,15 @@ module mst_fifo_fsm (
     begin
       ifsm_cond[0] <= (cur_stap1 == IDLE) & (!imst_rd_n[0]) & (!rxf_n)& (!ibuf_ful[0]); 
       ifsm_cond[1] <= (cur_state == MTRD) & ( imst_rd_n[0]  | (rxf_n  & (!rxf_n_p1))  | ibuf_ful[0]) ; 
-      ifsm_cond[2] <= (cur_state == MDLE) & (!imst_wr_n[0]) & (!txe_n)& (ibuf_nep[0]  | stren | w_1byte) & (!w_1flag);
-      ifsm_cond[3] <= (cur_stap3 == MTWR) & ( imst_wr_n[0]  | (txe_n  & (!txe_n_p1))  | r_oobe |
-		                            ((!ififonempt[0]) & (!stren) & (!prefnempt[0]))) ; 
+      ifsm_cond[2] <= (cur_state == MDLE) & (!imst_wr_n[0]) & (!txe_n)& (!w_1flag);
+      ifsm_cond[3] <= (cur_stap3 == MTWR) & ( imst_wr_n[0]  | (txe_n  & (!txe_n_p1))  | r_oobe) ; 
     end 
     else 
     begin 
       ifsm_cond[0] <= (!imst_rd_n[ichannel]) & (!irxf_n[ichannel])  & (!ibuf_ful[ichannel]) & (cur_stap3 == IDLE); 
       ifsm_cond[1] <= ( imst_rd_n[ichannel]  | (rxf_n & (!rxf_n_p1))|   ibuf_ful[ichannel]) & (cur_state == MTRD); 
-      ifsm_cond[2] <= (!imst_wr_n[ichannel]) & (!itxe_n[ichannel])  & (ibuf_nep[ichannel] | stren) & (cur_stap3 == MDLE);
-      ifsm_cond[3] <= ( imst_wr_n[ichannel]  | (rxf_n & (!rxf_n_p1))| 
-			((!ififonempt[ichannel]) & (!stren) & (!prefnempt[ichannel]))) & (cur_stap3 == MTWR); 
+      ifsm_cond[2] <= (!imst_wr_n[ichannel]) & (!itxe_n[ichannel])  & (cur_stap3 == MDLE);
+      ifsm_cond[3] <= ( imst_wr_n[ichannel]  | (rxf_n & (!rxf_n_p1))) & (cur_stap3 == MTWR); 
     end 
   end 
 // Master State Machine  
@@ -311,7 +311,7 @@ wire [3:0] wbe;
       	  be_oe_n 	<= 1'b0;
           if ((cur_stap3 == MTWR) && (cur_stap4 == MDLE)) 
             wr_n        <= 1'b0; 
-          else if (((!prefnempt[0]) & (!stren)) | r_oobe | txe_n)
+          else if (r_oobe | txe_n)
 	    wr_n 	<= 1'b1;
       	  rd_n		<= 'b1; 
       	  oe_n		<= 'b1;
@@ -324,7 +324,7 @@ wire [3:0] wbe;
             wr_n	<= 1'b1;
           else if (cur_stap1 == MDLE)
             wr_n	<= 1'b0;
-          else if ((!rxf_n) & (((!stren) & (!prefnempt[ichannel])) | ifsm_cond[3])) 
+          else if ((!rxf_n) & ifsm_cond[3]) 
             wr_n	<= 1'b1;
           rd_n		<= 1'b1; 
           oe_n		<= 1'b1; 
@@ -338,9 +338,9 @@ wire [3:0] wbe;
   wire rd245;
   wire rd600; 
   wire rema600;
-  assign rd245 = (!mltcn) && (!txe_n) && (prefnempt[0] | stren) && (!r_oobe) && (cur_stap3 == MTWR) 
+  assign rd245 = (!mltcn) && (!txe_n) && (!r_oobe) && (cur_stap3 == MTWR) 
                           && (!remain[0][36]) && (!mst_wr_n_p4) && prefena;  
-  assign rd600 =   mltcn  && (!rxf_n) && (!wr_n) && (prefnempt[ichannel] | stren) && (cur_stap3 == MTWR); 
+  assign rd600 =   mltcn  && (!rxf_n) && (!wr_n) && (cur_stap3 == MTWR); 
   assign rema600 = (!remain[ichannel][36]) & (cur_stap2 == MTWR) & (cur_stap3 != MTWR) & mltcn;
   assign readburst  = rd245 | rd600;
   //  
@@ -394,8 +394,8 @@ wire [3:0] wbe;
       r_oob_p1    <= r_oob;		
       r_oob_p2    <= r_oob_p1;
       r_oob_p3    <= r_oob_p2;
-      mst_rd_n_p1 <= 4'h0;  // Hardcoded at top-level
-      mst_wr_n_p1 <= 4'h0;  // Hardcoded at top-level
+      mst_rd_n_p1 <= mst_rd_n;
+      mst_wr_n_p1 <= mst_wr_n;
       mst_rd_n_p2 <= mst_rd_n_p1;
       mst_wr_n_p2 <= mst_wr_n_p1;
       mst_wr_n_p3 <= mst_wr_n_p2[0];
@@ -403,20 +403,18 @@ wire [3:0] wbe;
     end 
   end
 // Check received streaming data
-assign ch0_vld = rvalid & stren & (ichannel == 2'b00);
-assign ch1_vld = rvalid & stren & (ichannel == 2'b01) & mltcn;
-assign ch2_vld = rvalid & stren & (ichannel == 2'b10) & mltcn;
-assign ch3_vld = rvalid & stren & (ichannel == 2'b11) & mltcn;
+assign ch0_vld = rvalid & (ichannel == 2'b00);
+assign ch1_vld = rvalid & (ichannel == 2'b01) & mltcn;
+assign ch2_vld = rvalid & (ichannel == 2'b10) & mltcn;
+assign ch3_vld = rvalid & (ichannel == 2'b11) & mltcn;
 assign chk_data= rdata;
 //*****Prefetch control
 assign prefena = (cur_state == MTWR);
 assign prefreq = readburst | rema600;
-assign prefmod = stren;
 assign prefchn = ichannel;
 assign wdata   = prefdout[31:0];
 assign wbe     = prefdout[35:32];
 // Internal FIFO control 
-assign ififowr  	= rvalid & (!stren);
 assign ififowrid 	= ichannel;
 assign ififo_wdat 	= {rbe,rdata}; 
 //  

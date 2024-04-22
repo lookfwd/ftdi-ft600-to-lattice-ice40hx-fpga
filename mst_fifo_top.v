@@ -12,7 +12,6 @@ module mst_fifo_top (
   input wire HRST_N,
   input wire SRST_N,
   input wire MLTCN, // 1: Multi Channel Mode, 0: 245 Mode 
-  input wire STREN, // 1: Streaming Test,     0: Loopback Test
   input wire ERDIS, // 1: Disable received data sequence check  
   input wire R_OOB,
   input wire W_OOB,  
@@ -34,7 +33,9 @@ module mst_fifo_top (
   wire [31:0] tp_data;
   wire [3:0]  tp_be;
 
-  assign DATA 	= ~tp_be_oe_n ? tp_data 	: 32'hzzzz;
+  assign DATA[7:0] 	 = ~tp_be_oe_n ? tp_data[7:0] 	: 8'bzzzzzzzz;
+  assign DATA[15:8]  = ~tp_dt_oe_n ? tp_data[15:8] 	: 8'bzzzzzzzz;
+  assign DATA[31:16] = ~tp_be_oe_n ? tp_data[31:16] 	: 16'hzzzz;
   assign BE 	= ~tp_be_oe_n ? tp_be 		: 4'bzzzz;
 
   wire RST_N = SRST_N & HRST_N;
@@ -53,18 +54,9 @@ module mst_fifo_top (
   wire [31:0] ch1_dat;
   wire [31:0] ch2_dat;
   wire [31:0] ch3_dat;
-  // 
-  wire ififord;
-  wire ififowr;
-  wire [1:0] ififowrid;
-  wire [3:0] ififoafull;
-  wire [3:0] ififonempt;
-  wire [35:0] ififo_wdat;
-  wire [35:0] ififo_rdat;
   //
   wire prefena;
   wire prefreq;
-  wire prefmod;
   wire[ 1:0]  prefchn;
   wire[ 3:0]  prefnempt;
   wire[35:0]  prefdout; 
@@ -79,7 +71,6 @@ module mst_fifo_top (
     .ibe		(BE),
     //
     .mltcn	(MLTCN),
-    .stren	(STREN),
     .r_oob	(R_OOB),
     .w_oob	(W_OOB),
     // 
@@ -90,7 +81,7 @@ module mst_fifo_top (
     .wr_n	(WR_N),
     .rd_n	(RD_N),
     .oe_n	(OE_N),
-    // 
+
     // Check Data interface 
     .ch0_vld	(ch0_vld),
     .ch1_vld	(ch1_vld),
@@ -98,16 +89,9 @@ module mst_fifo_top (
     .ch3_vld	(ch3_vld),
     .chk_data	(chk_data),
     .chk_err	(STRER),
-    // internal FIFO control interface 
-    .ififoafull	(ififoafull),
-    .ififonempt	(ififonempt),
-    .ififowr	(ififowr),
-    .ififowrid	(ififowrid),
-    .ififo_wdat	(ififo_wdat),
     //
     .prefena   (prefena),
     .prefreq   (prefreq),
-    .prefmod   (prefmod),
     .prefchn   (prefchn),
     .prefnempt (prefnempt),
     .prefdout  (prefdout)
@@ -119,14 +103,9 @@ module mst_fifo_top (
      //Flow control interface
     .prefena  (prefena),    
     .prefreq  (prefreq),    
-    .prefmod  (prefmod),
     .prefchn  (prefchn),       
     .prefnempt(prefnempt),     
     .prefdout (prefdout),     
-     //Internal FIFO interface  
-    .ififord  (ififord),
-    .ifnempt  (ififonempt),    
-    .ififodat (ififo_rdat),  
      //Streaming generate interface 
     .gen0req  (ch0_req),  
     .gen1req  (ch1_req), 
@@ -150,7 +129,7 @@ module mst_fifo_top (
     .ch2_vld	(ch2_vld),
     .ch3_vld	(ch3_vld),
     .rdata	(chk_data),
-    .seq_err	(tp_seq_err) 
+    .seq_err	(STRER) 
   );
   //
   mst_data_gen i4_gen(
@@ -165,33 +144,6 @@ module mst_fifo_top (
     .ch1_dat	(ch1_dat),
     .ch2_dat	(ch2_dat),
     .ch3_dat	(ch3_dat)
-  ); 
-  // 
-  wire mem_w;       
-  wire [13:0] mem_a;
-  wire [35:0] mem_d;   
-  wire [35:0] mem_q; 
-  //  
-  mst_fifo_ctl i5_ctl(
-    .clk	(CLK),
-    .rst_n	(RST_N),
-    .mltcn	(MLTCN),
-    //FIFO control 
-    .fiford	(ififord),
-    .fifordid	(prefchn),
-    .fifowr	(ififowr),
-    .fifowrid	(ififowrid),
-    .fifoafull	(ififoafull),
-    .fifonempt	(ififonempt),
-    .fifo_din	(ififo_wdat),
-    .fifo_dout	(ififo_rdat), 
-    // Connect to memories
-    .mem_we	(mem_w),
-    .mem_a	(mem_a),
-    .mem_d	(mem_d),
-    .mem_q	(mem_q) 
-    );
+  );
 
-
-//
 endmodule 
