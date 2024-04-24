@@ -9,9 +9,6 @@
 
 module mst_fifo_top (
   //GPIO Control Signals
-  input wire HRST_N,
-  input wire SRST_N,
-  input wire ERDIS, // 1: Disable received data sequence check  
   input wire R_OOB,
   input wire W_OOB,  
   // FIFO Slave interface 
@@ -21,11 +18,17 @@ module mst_fifo_top (
   input wire RXF_N,    // ACK_N
   input wire TXE_N,
   output wire WR_N,    // REQ_N
+  output wire SIWU_N,
   output wire RD_N,
   output wire OE_N,
   // Miscellaneous Interface 
-  output wire STRER
+  output wire STRER,
+  input wire CLK_IN // PCB 12Mhz
 );
+
+  assign SIWU_N		= 1'b1; // Reserved external pull-up
+
+  assign ERDIS = 0; // 1: Disable received data sequence check  
   
   wire tp_dt_oe_n;
   wire tp_be_oe_n;
@@ -36,7 +39,7 @@ module mst_fifo_top (
   assign DATA[15:8]  = ~tp_dt_oe_n ? tp_data[15:8] 	: 8'bzzzzzzzz;
   assign BE 	= ~tp_be_oe_n ? {2{tp_be}} 		: 2'bzz;
 
-  wire RST_N = SRST_N & HRST_N;
+  wire RST_N;
 
   wire ch0_vld;
   wire [15:0] chk_data;
@@ -104,6 +107,22 @@ module mst_fifo_top (
     .clk	(CLK),
     .ch0_req	(ch0_req),
     .ch0_dat	(ch0_dat)
+  );
+
+  wire pll_locked;
+  wire pll_clk; // PLL-Generated Clock (120 Mhz - given settings) - Not Used
+
+  // Global Asynchronous Reset
+  // See https://github.com/npetersen2/iCE40_Template/blob/master/sys.v
+  reg [3:0] pll_locked_ff;
+  always @(posedge CLK_IN)
+      pll_locked_ff <= {pll_locked_ff, pll_locked};
+  assign RST_N = pll_locked_ff[3];
+
+  pll myPLL(
+    .clock_in(CLK_IN),
+    .global_clock(pll_clk),
+    .locked(pll_locked)
   );
 
 endmodule 
