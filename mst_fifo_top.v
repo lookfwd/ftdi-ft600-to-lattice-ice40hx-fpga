@@ -22,7 +22,7 @@ module mst_fifo_top (
   output wire RD_N,
   output wire OE_N,
   // Miscellaneous Interface 
-  output wire STRER,
+  output wire [7:0] DEBUG,
   input wire CLK_IN // PCB 12Mhz
 );
 
@@ -74,7 +74,7 @@ module mst_fifo_top (
     // Check Data interface 
     .ch0_vld	(ch0_vld),
     .chk_data	(chk_data),
-    .chk_err	(STRER),
+    .chk_err	(DEBUG[0]),
     //
     .prefena   (prefena),
     .prefreq   (prefreq),
@@ -125,4 +125,30 @@ module mst_fifo_top (
     .locked(pll_locked)
   );
 
+  // Debug stuff
+  reg[23:0] cnt1;
+  reg[23:0] cnt2;
+  always @ (posedge CLK or negedge RST_N)
+  begin
+    if (~RST_N)
+      cnt1 <= 0;
+    else
+      cnt1 <= cnt1 + 1;
+  end
+  
+  always @ (posedge CLK_IN or negedge RST_N)
+  begin
+    if (~RST_N)
+      cnt2 <= 0;
+    else
+      cnt2 <= cnt2+1;
+  end 
+
+  assign DEBUG[1] = cnt1[23];
+  assign DEBUG[2] = cnt2[23];
+  assign DEBUG[3] = RXF_N;
+  assign DEBUG[4] = TXE_N;
+  assign DEBUG[5] = R_OOB;
+  assign DEBUG[6] = W_OOB;
+  assign DEBUG[7] = 1'b0;
 endmodule 

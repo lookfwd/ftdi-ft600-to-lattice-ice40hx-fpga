@@ -12,7 +12,7 @@
 
 # ##############################################################################
 
-###IOSet List 29
+###IOSet List 36
 set_io BE[1] M16
 set_io DATA[12] H14
 set_io DATA[7] F16
@@ -22,7 +22,14 @@ set_io CLK H16
 set_io DATA[13] F14
 set_io DATA[6] E16
 set_io RXF_N P16
-set_io STRER C3
+set_io DEBUG[0] C3
+set_io DEBUG[1] B3
+set_io DEBUG[2] C4
+set_io DEBUG[3] C5
+set_io DEBUG[4] A1
+set_io DEBUG[5] A2
+set_io DEBUG[6] B4
+set_io DEBUG[7] B5
 set_io TXE_N M15
 set_io DATA[14] J15
 set_io DATA[5] E14
