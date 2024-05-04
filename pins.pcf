@@ -4,7 +4,7 @@
 
 # Version:            2020.12.27943
 
-# File Generated:     Apr 22 2024 18:37:34
+# File Generated:     May 4 2024 12:05:41
 
 # Family & Device:    iCE40HX8K
 
@@ -13,40 +13,40 @@
 # ##############################################################################
 
 ###IOSet List 36
-set_io BE[1] M16
-set_io DATA[12] H14
-set_io DATA[7] F16
-set_io RD_N N16
-set_io W_OOB R15
+set_io BE[1] K16
+set_io DATA[12] J15
+set_io RD_N M16
 set_io CLK H16
 set_io DATA[13] F14
 set_io DATA[6] E16
-set_io RXF_N P16
 set_io DEBUG[0] C3
-set_io DEBUG[1] B3
-set_io DEBUG[2] C4
-set_io DEBUG[3] C5
-set_io DEBUG[4] A1
-set_io DEBUG[5] A2
-set_io DEBUG[6] B4
-set_io DEBUG[7] B5
-set_io TXE_N M15
-set_io DATA[14] J15
+set_io RXF_N N16
+set_io TXE_N L16
+set_io DATA[14] J14
 set_io DATA[5] E14
-set_io SIWU_N K16
+set_io DEBUG[1] B3
 set_io DATA[15] G14
 set_io DATA[4] D15
+set_io DEBUG[2] C4
 set_io CLK_IN J3
-set_io DATA[3] D16
-set_io DATA[2] C16
-set_io OE_N L16
-set_io DATA[1] D14
+set_io DATA[3] D14
+set_io DEBUG[3] C5
+set_io DATA[2] D16
+set_io DEBUG[4] A1
+set_io OE_N M15
+set_io RST R15
+set_io DATA[1] C16
 set_io DATA[10] G16
 set_io DATA[9] G15
-set_io BE[0] J14
+set_io DEBUG[5] A2
+set_io BE[0] K14
 set_io DATA[0] B16
-set_io DATA[11] K14
+set_io DATA[11] H14
 set_io DATA[8] F15
-set_io R_OOB P15
+set_io DEBUG[6] B4
+set_io R_OOB P16
 set_io WR_N K15
+set_io DATA[7] F16
+set_io DEBUG[7] B5
+set_io W_OOB P15
 

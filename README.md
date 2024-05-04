@@ -1,6 +1,12 @@
 # ftdi-ft600-to-lattice-ice40hx-fpga
 This design runs the streaming example of FTDI FT600 (16-bit bus), using a Lattice iCE40-HX FPGA. It uses the iCE40HX8K Breakout Board and a UMFT600X-B, connected through a custom adapter that connects the 40-pin connector `J2` of iCE40HX8K Breakout Board with the ANSI/VITA 57.1-2008 FMC LPC Connector of UMFT600X-B using a [Samtec ASP-134603-01](https://www.mouser.com/ProductDetail/200-ASP-134603-01).
 
+## Adaptor Board
+
+In the [kicad directory](kicad) you can find a PCB board adaptor.
+
+![](resources/adaptor-pcb.png)
+
 ## Notes on Configuration of Boards
 
 iCE40HX8K Breakout Board has all I/O banks configured to 3.3V. As such, UMFT600X-B must be configured to 3.3V by removing the jumper from JP2 and putting it on JP6. FT600 has been configured to 66MHz, 245 Mode and 1 Channel with the `FT60X Chip Configuration Programmer`. As such, the two GPIOs aren't used for configuring mode and can be used to perform the Abort Recovery sequence if necessary. Notification Messages aren't enabled for FT600.
